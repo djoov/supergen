@@ -1,0 +1,22 @@
+# Core LLM & AI
+openai>=1.0.0
+requests>=2.28.0
+
+# Vector Database
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+
+# Knowledge Graph
+neo4j>=5.0.0
+
+# Web API
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+pydantic>=2.0.0
+
+# AutoGen Multi-Agent
+autogen-agentchat>=0.4.0
+autogen-ext[openai]>=0.4.0
+
+# Utilities
+python-dotenv>=1.0.0
