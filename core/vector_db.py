@@ -34,11 +34,29 @@ class ChromaClient:
             logger.warning(f"⚠️ Failed to connect to ChromaDB: {e}")
 
     def _get_embedding(self, text: str) -> list:
+        """Get embedding from Ollama. Supports both new and old API."""
+        # Try NEW Ollama API first (/api/embed)
+        try:
+            resp = requests.post(
+                f"{config.OLLAMA_BASE_URL}/api/embed",
+                json={"model": config.OLLAMA_MODEL, "input": text},
+                timeout=120
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                embeddings = data.get("embeddings", [])
+                if embeddings and len(embeddings) > 0:
+                    return embeddings[0]
+                return data.get("embedding", [])
+        except Exception:
+            pass
+
+        # Fallback to OLD Ollama API (/api/embeddings)
         try:
             resp = requests.post(
                 f"{config.OLLAMA_BASE_URL}/api/embeddings",
                 json={"model": config.OLLAMA_MODEL, "prompt": text},
-                timeout=60
+                timeout=120
             )
             if resp.status_code == 200:
                 return resp.json().get("embedding", [])

@@ -1,10 +1,12 @@
 # Virtual environments
 venv/
-.env/
 env/
 .venv/
 
-# Ignore local databases (these will be mounted dynamically via volumes)
+# Sensitive config (mounted at runtime via docker-compose volumes)
+.env
+
+# Ignore local databases (mounted dynamically via volumes)
 chroma_v4/
 neo4j_data/
 
@@ -13,6 +15,11 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# Generated files (not needed in image)
+*.tar
+*.pdf
+generate_pdf.py
 
 # Ignored Mac/Windows system files
 .DS_Store

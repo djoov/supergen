@@ -4,10 +4,8 @@ SuperGen Data Seeder (Standalone, Ollama Embeddings)
 Mengisi data sample ke ChromaDB dan Neo4j.
 Menggunakan Ollama API untuk embeddings (tidak bergantung sentence-transformers).
 
-Jalankan dengan Python apapun yang punya chromadb dan neo4j:
+Jalankan:
     python seed_data.py
-    atau
-    .\HybridKnowledge\venv_310\Scripts\python.exe seed_data.py
 """
 import sys
 import os
@@ -36,17 +34,36 @@ print("=" * 60)
 
 
 def get_embedding(text: str) -> list:
-    """Get embedding from Ollama /api/embeddings"""
+    """Get embedding from Ollama. Supports both new (/api/embed) and old (/api/embeddings) API."""
+    # Try NEW Ollama API first (/api/embed)
+    try:
+        resp = requests.post(
+            f"{OLLAMA_BASE_URL}/api/embed",
+            json={"model": OLLAMA_EMBED_MODEL, "input": text},
+            timeout=120
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            # New API returns {"embeddings": [[...]]}
+            embeddings = data.get("embeddings", [])
+            if embeddings and len(embeddings) > 0:
+                return embeddings[0]
+            # Some versions return {"embedding": [...]}
+            return data.get("embedding", [])
+    except Exception:
+        pass
+
+    # Fallback to OLD Ollama API (/api/embeddings)
     try:
         resp = requests.post(
             f"{OLLAMA_BASE_URL}/api/embeddings",
             json={"model": OLLAMA_EMBED_MODEL, "prompt": text},
-            timeout=120  # Increased to 120s for giant models (e.g. 14B) cold start
+            timeout=120
         )
         if resp.status_code == 200:
             return resp.json().get("embedding", [])
         else:
-            print(f"  [WARNING] Embedding HTTP {resp.status_code}")
+            print(f"  [WARNING] Embedding failed on both /api/embed and /api/embeddings (HTTP {resp.status_code})")
             return []
     except Exception as e:
         print(f"  [ERROR] Embedding failed: {e}")
