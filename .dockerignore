@@ -1,0 +1,19 @@
+# Virtual environments
+venv/
+.env/
+env/
+.venv/
+
+# Ignore local databases (these will be mounted dynamically via volumes)
+chroma_v4/
+neo4j_data/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignored Mac/Windows system files
+.DS_Store
+Thumbs.db

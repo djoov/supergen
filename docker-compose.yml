@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  supergen-app:
+    build: .
+    container_name: supergen-app
+    # If you want to run the FastAPI server instead of the CLI, uncomment the next line:
+    # command: uvicorn main:app --host 0.0.0.0 --port 8000
+    
+    # Expose API port if using FastAPI
+    ports:
+      - "8000:8000"
+    
+    # Mount volumes to save data outside the container
+    volumes:
+      - ./chroma_v4:/app/chroma_v4
+      - ./.env:/app/.env
+    
+    # Wait for Neo4j to be ready before starting the app
+    depends_on:
+      - supergen-neo4j
+    
+    # Allows the container to speak to Ollama running on the host machine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      
+    # For interactive CLI usage when running `docker-compose run supergen-app`
+    stdin_open: true
+    tty: true
+
+  supergen-neo4j:
+    image: neo4j:latest
+    container_name: supergen-neo4j
+    ports:
+      - "7474:7474" # HTTP Browser
+      - "7687:7687" # Bolt Protocol
+    environment:
+      - NEO4J_AUTH=neo4j/password123
+    volumes:
+      - ./neo4j_data:/data

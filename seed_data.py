@@ -41,7 +41,7 @@ def get_embedding(text: str) -> list:
         resp = requests.post(
             f"{OLLAMA_BASE_URL}/api/embeddings",
             json={"model": OLLAMA_EMBED_MODEL, "prompt": text},
-            timeout=60
+            timeout=120  # Increased to 120s for giant models (e.g. 14B) cold start
         )
         if resp.status_code == 200:
             return resp.json().get("embedding", [])
@@ -52,7 +52,14 @@ def get_embedding(text: str) -> list:
         print(f"  [ERROR] Embedding failed: {e}")
         return []
 
-
+def warmup_ollama():
+    """Warm up the Ollama model to prevent first-request timeouts."""
+    print(f"\n[Ollama] Warming up model '{OLLAMA_EMBED_MODEL}' into memory... (This may take up to 2 minutes)")
+    emb = get_embedding("warmup")
+    if not emb:
+        print(f"[Ollama] ERROR! Failed to load model '{OLLAMA_EMBED_MODEL}'. Please check if Ollama is running.")
+        sys.exit(1)
+    print(f"[Ollama] Model warmed up! Embedding dimension: {len(emb)}")
 
 HR_CANDIDATES = [
     {
@@ -265,11 +272,7 @@ def seed_chromadb():
             except Exception:
                 hr_col.update(ids=[c["id"]], documents=[doc], embeddings=[emb], metadatas=[meta])
         else:
-            # Store without embeddings if Ollama not available
-            try:
-                hr_col.add(ids=[c["id"]], documents=[doc], metadatas=[meta])
-            except Exception:
-                hr_col.update(ids=[c["id"]], documents=[doc], metadatas=[meta])
+            print(f"  [ERROR] Skipped {c['name']} because embedding failed.")
 
         print(f"  [OK] {c['name']} ({c['position']})")
 
@@ -291,10 +294,7 @@ def seed_chromadb():
             except Exception:
                 travel_col.update(ids=[loc["id"]], documents=[doc], embeddings=[emb], metadatas=[meta])
         else:
-            try:
-                travel_col.add(ids=[loc["id"]], documents=[doc], metadatas=[meta])
-            except Exception:
-                travel_col.update(ids=[loc["id"]], documents=[doc], metadatas=[meta])
+            print(f"  [ERROR] Skipped {loc['name']} because embedding failed.")
 
         print(f"  [OK] {loc['name']} ({loc['country']})")
 
@@ -373,13 +373,14 @@ def seed_neo4j():
 
 # ─────────────────────────────────────────────────────────────
 def main():
-    # Check Ollama reachability
+    # Check Ollama reachability and warmup
     try:
         r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
-        print(f"\n[Ollama] Connected - using {OLLAMA_EMBED_MODEL} for embeddings")
     except Exception:
-        print("\n[Ollama] WARNING: Not reachable! Data will be stored WITHOUT embeddings.")
-        print("  Semantic search will not work properly until Ollama is running.")
+        print("\n[Ollama] ERROR! Ollama API not reachable. Please start 'ollama serve'.")
+        sys.exit(1)
+        
+    warmup_ollama()
 
     seed_chromadb()
     seed_neo4j()
