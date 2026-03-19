@@ -1,0 +1,37 @@
+# Environment & Secrets
+.env
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local databases (setiap PC harus seed sendiri)
+chroma_v4/
+chroma_v3/
+chroma_db_v2/
+chroma_db_unified/
+neo4j_data/
+
+# Generated files
+*.tar
+*.pdf
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test folders
+test_c/
+test_c2/
+tmp_seed_output.txt
